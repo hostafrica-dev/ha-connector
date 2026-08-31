@@ -1,0 +1,187 @@
+{
+  "name": "connector",
+  "displayName": "HostAfrica Connector",
+  "description": "Deploy, monitor and manage HostAfrica VPS, DNS and domains from your AI coding assistant — registers the HostAfrica MCP server with VS Code, Claude Code, Cursor and more.",
+  "version": "1.0.0",
+  "publisher": "hostafrica",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hostafrica-dev/ha-connector.git",
+    "directory": "packages/vscode-extension"
+  },
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "hostafrica",
+    "mcp",
+    "vps",
+    "hosting",
+    "dns",
+    "domains"
+  ],
+  "icon": "resources/icon.png",
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "hostafrica.mcp",
+        "label": "HostAfrica MCP"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hostafrica",
+          "title": "HostAfrica",
+          "icon": "resources/hostafrica.svg"
+        }
+      ]
+    },
+    "views": {
+      "hostafrica": [
+        {
+          "id": "hostafricaClients",
+          "name": "AI Clients",
+          "icon": "resources/hostafrica.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "hostafrica.connectAll",
+        "title": "Connect (register with all detected clients)",
+        "category": "HostAfrica",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "hostafrica.disconnectAll",
+        "title": "Disconnect (remove from all clients)",
+        "category": "HostAfrica"
+      },
+      {
+        "command": "hostafrica.registerClient",
+        "title": "Register with Client…",
+        "category": "HostAfrica",
+        "icon": "$(add)"
+      },
+      {
+        "command": "hostafrica.unregisterClient",
+        "title": "Remove from Client…",
+        "category": "HostAfrica",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "hostafrica.setToken",
+        "title": "Set API Token (fallback for non-OAuth clients)",
+        "category": "HostAfrica"
+      },
+      {
+        "command": "hostafrica.clearToken",
+        "title": "Clear Stored API Token",
+        "category": "HostAfrica"
+      },
+      {
+        "command": "hostafrica.openClientArea",
+        "title": "Open Client Area",
+        "category": "HostAfrica"
+      },
+      {
+        "command": "hostafrica.openDocs",
+        "title": "Open Developer Docs",
+        "category": "HostAfrica"
+      },
+      {
+        "command": "hostafrica.refresh",
+        "title": "Refresh",
+        "category": "HostAfrica",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "hostafrica.connectAll",
+          "when": "view == hostafricaClients",
+          "group": "navigation@1"
+        },
+        {
+          "command": "hostafrica.refresh",
+          "when": "view == hostafricaClients",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "hostafrica.registerClient",
+          "when": "view == hostafricaClients && viewItem == client-unregistered",
+          "group": "inline"
+        },
+        {
+          "command": "hostafrica.unregisterClient",
+          "when": "view == hostafricaClients && viewItem == client-registered",
+          "group": "inline"
+        }
+      ]
+    },
+    "walkthroughs": [
+      {
+        "id": "hostafrica.gettingStarted",
+        "title": "Get started with HostAfrica Connector",
+        "description": "Connect your AI coding assistant to your HostAfrica account.",
+        "steps": [
+          {
+            "id": "hostafrica.step.connect",
+            "title": "Connect your account",
+            "description": "Run **HostAfrica: Connect** — OAuth-capable tools sign in through your browser, no API keys to paste.\n[Connect](command:hostafrica.connectAll)",
+            "media": {
+              "markdown": "media/walkthrough-connect.md"
+            }
+          },
+          {
+            "id": "hostafrica.step.copilot",
+            "title": "Use it in chat",
+            "description": "Open your AI assistant's chat and try: *list my VPS servers*, *create a snapshot of web-01*, or *is mydomain.co.za available?*",
+            "media": {
+              "markdown": "media/walkthrough-chat.md"
+            }
+          },
+          {
+            "id": "hostafrica.step.manage",
+            "title": "Review or revoke access",
+            "description": "Access stays scoped to your account and is revocable anytime.\n[Open Client Area](command:hostafrica.openClientArea)",
+            "media": {
+              "markdown": "media/walkthrough-manage.md"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "check": "tsc -p . --noEmit",
+    "build": "npm run check && node esbuild.mjs",
+    "package": "npx --yes @vscode/vsce@3.9.2 package --no-dependencies",
+    "test:vscode": "npm run build && tsc -p tsconfig.test.json && node out-test/test/runTest.js"
+  },
+  "dependencies": {
+    "@hostafrica/connector-core": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.101.0",
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.23.1",
+    "mocha": "^10.7.3",
+    "typescript": "^5.5.4"
+  }
+}

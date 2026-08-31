@@ -1,0 +1,185 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*.*.*", "*.*.*"]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: VS Code integration tests
+        working-directory: packages/vscode-extension
+        run: |
+          npx tsc -p tsconfig.test.json
+          xvfb-run -a node out-test/test/runTest.js
+
+      - name: Package VSIX
+        run: npm run package -w packages/vscode-extension
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: build
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            packages/core/dist
+            packages/cli/dist
+            packages/vscode-extension/dist
+            packages/vscode-extension/*.vsix
+
+  release:
+    name: Release
+    needs: ci
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+      id-token: write # OIDC for npm trusted publishing
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      # Node ≥22.14 and npm ≥11.5.1 are required for OIDC. Do not set
+      # registry-url: setup-node would write an empty _authToken and npm
+      # would skip the OIDC exchange (ENEEDAUTH).
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+
+      - name: Install npm CLI for trusted publishing
+        run: npm install -g npm@11.19.1
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: build
+          path: .
+
+      - name: Check tag matches package versions
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for pkg in packages/core packages/cli packages/vscode-extension; do
+            ver="$(node -p "require('./${pkg}/package.json').version")"
+            if [ "$ver" != "$tag" ]; then
+              echo "Tag ${GITHUB_REF_NAME} (version ${tag}) does not match ${pkg} version ${ver}"
+              exit 1
+            fi
+          done
+
+      - name: Require marketplace secrets
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          missing=0
+          if [ -z "$VSCE_PAT" ]; then
+            echo "VSCE_PAT is not set"
+            missing=1
+          fi
+          if [ -z "$OVSX_PAT" ]; then
+            echo "OVSX_PAT is not set"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "Set both secrets on the 'release' environment before tagging."
+            exit 1
+          fi
+
+      - name: Resolve VSIX path
+        id: vsix
+        run: |
+          shopt -s nullglob
+          files=(packages/vscode-extension/*.vsix)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Expected exactly one .vsix, found ${#files[@]}"
+            printf '%s\n' "${files[@]}"
+            exit 1
+          fi
+          echo "path=${files[0]}" >> "$GITHUB_OUTPUT"
+
+      # Each package needs a Trusted Publisher on npmjs.com:
+      #   Organization/user: hostafrica-dev
+      #   Repository: ha-connector
+      #   Workflow filename: ci-cd.yml
+      #   Allowed actions: npm publish
+      # Provenance is generated automatically for public repos.
+      - name: Publish @hostafrica/connector-core
+        working-directory: packages/core
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          ver="$(node -p "require('./package.json').version")"
+          if npm view "${name}@${ver}" version >/dev/null 2>&1; then
+            echo "${name}@${ver} already published, skipping"
+          else
+            npm publish --access public
+          fi
+
+      - name: Publish @hostafrica/connect
+        working-directory: packages/cli
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          ver="$(node -p "require('./package.json').version")"
+          if npm view "${name}@${ver}" version >/dev/null 2>&1; then
+            echo "${name}@${ver} already published, skipping"
+          else
+            npm publish --access public
+          fi
+
+      - name: Publish VS Code Marketplace
+        run: npx --yes @vscode/vsce@3.9.2 publish --packagePath "${{ steps.vsix.outputs.path }}"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish Open VSX
+        run: npx --yes ovsx@1.1.1 publish "${{ steps.vsix.outputs.path }}" --pat "$OVSX_PAT"
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VSIX: ${{ steps.vsix.outputs.path }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists, skipping create"
+          else
+            gh release create "$GITHUB_REF_NAME" "$VSIX" \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes
+          fi
