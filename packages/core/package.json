@@ -2,7 +2,20 @@
   "name": "@hostafrica/connector-core",
   "version": "1.0.1",
   "description": "Registrar core for the HostAfrica Connector: detects AI clients and registers the HostAfrica MCP server with each, OAuth-first",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-client",
+    "hostafrica",
+    "oauth",
+    "vps",
+    "dns",
+    "registrar"
+  ],
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hostafrica-dev/ha-connector.git",

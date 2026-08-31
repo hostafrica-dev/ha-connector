@@ -2,7 +2,24 @@
   "name": "@hostafrica/connect",
   "version": "1.0.1",
   "description": "One-command installer: register the HostAfrica MCP server with Claude Code, Cursor, Windsurf, Codex, Gemini CLI and more",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-client",
+    "hostafrica",
+    "vps",
+    "dns",
+    "domains",
+    "hosting",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "cli"
+  ],
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hostafrica-dev/ha-connector.git",
