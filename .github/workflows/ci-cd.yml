@@ -70,6 +70,11 @@ jobs:
     permissions:
       contents: write
       id-token: write # OIDC for npm trusted publishing
+    # Job-level so step `if` conditions can read them: a step's own `env`
+    # block is not visible to that step's `if`.
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -102,23 +107,17 @@ jobs:
             fi
           done
 
-      - name: Require marketplace secrets
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      # Open VSX is the extension's required registry. The VS Code
+      # Marketplace is optional: without VSCE_PAT that step is skipped, and
+      # it starts working on its own once the secret is added.
+      - name: Require Open VSX token
         run: |
-          missing=0
-          if [ -z "$VSCE_PAT" ]; then
-            echo "VSCE_PAT is not set"
-            missing=1
-          fi
           if [ -z "$OVSX_PAT" ]; then
-            echo "OVSX_PAT is not set"
-            missing=1
-          fi
-          if [ "$missing" -ne 0 ]; then
-            echo "Set both secrets on the 'release' environment before tagging."
+            echo "OVSX_PAT is not set. Add it to the 'release' environment before tagging."
             exit 1
+          fi
+          if [ -z "$VSCE_PAT" ]; then
+            echo "note: VSCE_PAT is not set, skipping the VS Code Marketplace."
           fi
 
       - name: Resolve VSIX path
@@ -162,14 +161,11 @@ jobs:
           fi
 
       - name: Publish VS Code Marketplace
+        if: env.VSCE_PAT != ''
         run: npx --yes @vscode/vsce@3.9.2 publish --packagePath "${{ steps.vsix.outputs.path }}"
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Publish Open VSX
         run: npx --yes ovsx@1.1.1 publish "${{ steps.vsix.outputs.path }}" --pat "$OVSX_PAT"
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
       - name: GitHub Release
         env:
