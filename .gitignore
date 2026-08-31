@@ -8,3 +8,4 @@ dist-test/
 out-test/
 .vscode-test/
 PLAN.md
+DEPLOY.md
