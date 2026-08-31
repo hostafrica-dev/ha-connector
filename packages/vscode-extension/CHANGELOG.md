@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+Documentation and packaging update. No functional changes.
+
+- README documentation added for the published packages.
+- Repository and marketplace metadata updated.
+
 ## 1.0.0
 
 First stable release.

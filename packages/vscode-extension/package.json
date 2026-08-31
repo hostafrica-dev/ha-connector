@@ -2,7 +2,7 @@
   "name": "connector",
   "displayName": "HostAfrica Connector",
   "description": "Deploy, monitor and manage HostAfrica VPS, DNS and domains from your AI coding assistant — registers the HostAfrica MCP server with VS Code, Claude Code, Cursor and more.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "hostafrica",
   "license": "MIT",
   "repository": {

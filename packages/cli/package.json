@@ -1,6 +1,6 @@
 {
   "name": "@hostafrica/connect",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "One-command installer: register the HostAfrica MCP server with Claude Code, Cursor, Windsurf, Codex, Gemini CLI and more",
   "license": "MIT",
   "repository": {
@@ -19,7 +19,7 @@
     "check": "tsc -p . --noEmit"
   },
   "dependencies": {
-    "@hostafrica/connector-core": "1.0.0"
+    "@hostafrica/connector-core": "1.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

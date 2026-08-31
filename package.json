@@ -1,7 +1,7 @@
 {
   "name": "ha-connector-monorepo",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "HostAfrica Connector — one connector for every AI coding workflow, built on the HostAfrica remote MCP server",
   "workspaces": [
     "packages/*"

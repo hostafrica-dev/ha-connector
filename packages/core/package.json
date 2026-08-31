@@ -1,6 +1,6 @@
 {
   "name": "@hostafrica/connector-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Registrar core for the HostAfrica Connector: detects AI clients and registers the HostAfrica MCP server with each, OAuth-first",
   "license": "MIT",
   "repository": {
