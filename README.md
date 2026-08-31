@@ -14,13 +14,21 @@ Nothing runs locally. The MCP server is HostAfrica's hosted endpoint (`https://m
 
 ## Install
 
-The extension ships as a `.vsix` on the [latest release](https://github.com/hostafrica-dev/ha-connector/releases/latest). Download it and install into any VS Code-based editor:
+The extension is on [Open VSX](https://open-vsx.org/extension/hostafrica/connector), the registry Cursor, Windsurf, Antigravity and VSCodium read from. Search for **HostAfrica Connector** in the extensions view and install it there.
+
+For VS Code, and anywhere not wired to Open VSX, download the `.vsix` from the [latest release](https://github.com/hostafrica-dev/ha-connector/releases/latest):
 
 ```bash
 code --install-extension connector-1.0.1.vsix
 ```
 
-Swap `code` for `cursor` or `windsurf` to install into those. For terminals and CLI agents, install the CLI from npm: `npm install -g @hostafrica/connect`.
+Swap `code` for `cursor` or `windsurf` to install into those. VS Marketplace publishing is still to come.
+
+For terminals and CLI agents, install the CLI from npm:
+
+```bash
+npm install -g @hostafrica/connect
+```
 
 ## Connect your platform
 
