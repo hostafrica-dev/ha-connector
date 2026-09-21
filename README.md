@@ -91,7 +91,7 @@ Ask your assistant things like:
 
 Registrations point at the OAuth endpoint with no credentials. Your tool opens the browser and you sign in to HostAfrica; grants are scoped to your account and revocable in the [Client Area](https://panel.hostafrica.com/). The endpoint supports Dynamic Client Registration, PKCE and refresh tokens, so every platform above can run the flow itself.
 
-For the rare case OAuth can't run (JetBrains AI Assistant, CI), generate an API token in the Client Area and pass `--token <token>` or set `HOSTAFRICA_API_TOKEN`. Registrations then use the Bearer endpoint (`https://api.hostafrica.com/mcp`). Tokens written into third-party config files are plaintext by necessity; the files are chmod 600, and the VS Code extension keeps its own copy in encrypted SecretStorage.
+For the rare case OAuth can't run (JetBrains AI Assistant, CI), generate an API token in the Client Area and pass `--token <token>` or set `HOSTAFRICA_API_TOKEN`. Registrations then use the Bearer endpoint (`https://api.hostafrica.com/mcp`). Tokens written into third-party config files are plaintext by necessity. The connector restricts them to your user account: mode 600 on macOS and Linux, and an explicit NTFS ACL granting only your account on Windows (POSIX mode bits have no effect there). The VS Code extension keeps its own copy in encrypted SecretStorage.
 
 ## Try it from source
 

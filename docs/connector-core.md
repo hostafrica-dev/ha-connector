@@ -90,7 +90,7 @@ type AuthMode =
 
 OAuth registrations contain no credentials, only the endpoint. The client runs its own browser sign-in against a server supporting Dynamic Client Registration, PKCE and refresh tokens. Prefer this wherever `supportsOAuth` is true.
 
-Token mode writes an `Authorization: Bearer <token>` header into the client's config, for the rare tool that can't run OAuth. Files written this way are `chmod 600`.
+Token mode writes an `Authorization: Bearer <token>` header into the client's config, for the rare tool that can't run OAuth. Files written this way are restricted to the current user: `chmod 600` on POSIX, an owner-only NTFS ACL (via `icacls`) on Windows, where mode bits are ignored.
 
 Writes are read-modify-write: entries for other MCP servers, and unrelated top-level keys, are preserved. Invalid existing JSON or TOML raises a clear error naming the file rather than overwriting it.
 

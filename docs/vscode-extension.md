@@ -41,7 +41,7 @@ Registering from here writes the same config the tool would write itself, so Cla
 
 Registrations point at the OAuth endpoint (`https://mcp.hostafrica.com/mcp`) with no credentials in them. Your tool opens the browser, you sign in, and the grant is scoped to your account and revocable anytime in the [Client Area](https://panel.hostafrica.com/). The endpoint supports Dynamic Client Registration, PKCE and refresh tokens, so each client runs the flow itself.
 
-For the rare case OAuth can't run (JetBrains AI Assistant, CI), generate an API token in the Client Area and use **HostAfrica: Set API Token**. The extension keeps its copy in VS Code's encrypted SecretStorage; tokens it writes into other tools' config files are chmod 600.
+For the rare case OAuth can't run (JetBrains AI Assistant, CI), generate an API token in the Client Area and use **HostAfrica: Set API Token**. The extension keeps its copy in VS Code's encrypted SecretStorage; tokens it writes into other tools' config files are restricted to your account (chmod 600 on macOS and Linux, an owner-only NTFS ACL on Windows).
 
 ## Other editors and terminals
 

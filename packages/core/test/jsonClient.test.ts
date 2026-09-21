@@ -114,3 +114,24 @@ test("config file is written mode 600 even if it pre-existed looser", async (t) 
   const stat = await fs.stat(cfgPath);
   assert.equal(stat.mode & 0o777, 0o600);
 });
+
+test("config file containing a token is ACL-restricted to the current user on Windows", async (t) => {
+  if (process.platform !== "win32") return t.skip("Windows ACLs only");
+  const dir = await tmpdir();
+  const cfgPath = path.join(dir, "cfg", "mcp.json");
+  const client = makeClient(dir);
+  await client.register({ auth: { kind: "token", token: "tok" } });
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const { stdout } = await promisify(execFile)("icacls", [cfgPath]);
+  // icacls prints one "PRINCIPAL:(perms)" line per ACE after the path.
+  const aces = stdout
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.includes(":(") && !/^Successfully processed/i.test(l))
+    .map((l) => l.replace(/^.*?\s(?=\S+:\()/, ""));
+  assert.equal(aces.length, 1, `expected a single ACE, got: ${stdout}`);
+  assert.match(aces[0], new RegExp(`\\\\${process.env.USERNAME}:\\(F\\)$`, "i"));
+  // No inherited ACEs (icacls marks them with "(I)").
+  assert.ok(!stdout.includes("(I)"), `inherited ACEs still present: ${stdout}`);
+});
