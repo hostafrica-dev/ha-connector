@@ -124,14 +124,28 @@ test("config file containing a token is ACL-restricted to the current user on Wi
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
   const { stdout } = await promisify(execFile)("icacls", [cfgPath]);
-  // icacls prints one "PRINCIPAL:(perms)" line per ACE after the path.
+  // icacls prints "PRINCIPAL:(perms)" per ACE; the first is prefixed by the path.
   const aces = stdout
+    .replace(cfgPath, "")
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l.includes(":(") && !/^Successfully processed/i.test(l))
-    .map((l) => l.replace(/^.*?\s(?=\S+:\()/, ""));
-  assert.equal(aces.length, 1, `expected a single ACE, got: ${stdout}`);
-  assert.match(aces[0], new RegExp(`\\\\${process.env.USERNAME}:\\(F\\)$`, "i"));
-  // No inherited ACEs (icacls marks them with "(I)").
-  assert.ok(!stdout.includes("(I)"), `inherited ACEs still present: ${stdout}`);
+    .filter((l) => /:\(.*\)$/.test(l))
+    .map((l) => {
+      const i = l.lastIndexOf(":(");
+      return { principal: l.slice(0, i), perms: l.slice(i + 1) };
+    });
+  const user = process.env.USERNAME ?? "";
+  const isUser = (p: string) => p.toLowerCase().endsWith(`\\${user.toLowerCase()}`);
+  // Only the owner and the root-equivalent principals may remain.
+  const allowed = (p: string) =>
+    isUser(p) || /^NT AUTHORITY\\SYSTEM$/i.test(p) || /^BUILTIN\\Administrators$/i.test(p);
+  assert.ok(aces.length > 0, `no ACEs parsed from: ${stdout}`);
+  for (const ace of aces) {
+    assert.ok(allowed(ace.principal), `unexpected principal ${ace.principal} in: ${stdout}`);
+    assert.ok(!ace.perms.includes("(I)"), `inherited ACE ${ace.principal} in: ${stdout}`);
+  }
+  assert.ok(
+    aces.some((a) => isUser(a.principal) && a.perms.includes("(F)")),
+    `current user lacks full control in: ${stdout}`,
+  );
 });

@@ -66,8 +66,21 @@ export async function restrictAclToCurrentUser(p: string): Promise<void> {
   if (!user) return;
   const principal = domain ? `${domain}\\${user}` : user;
   try {
-    // /inheritance:r removes inherited ACEs; /grant:r replaces explicit ones.
-    await execFileP("icacls", [p, "/inheritance:r", "/grant:r", `${principal}:F`]);
+    // /inheritance:r drops inherited ACEs, /grant:r replaces the user's
+    // explicit ACE, and /remove:g strips the broad groups that could remain
+    // as explicit entries: Everyone, Authenticated Users, Users (by SID so
+    // it is locale-independent). SYSTEM and Administrators may remain; that
+    // is parity with root on POSIX.
+    await execFileP("icacls", [
+      p,
+      "/inheritance:r",
+      "/grant:r",
+      `${principal}:F`,
+      "/remove:g",
+      "*S-1-1-0",
+      "*S-1-5-11",
+      "*S-1-5-32-545",
+    ]);
   } catch {
     /* best effort */
   }
