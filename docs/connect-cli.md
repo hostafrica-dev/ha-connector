@@ -62,7 +62,7 @@ VS Code isn't in this list: the [companion extension](https://github.com/hostafr
 
 Registrations carry no credentials. They point at the OAuth endpoint, and your tool runs the browser sign-in itself. The endpoint supports Dynamic Client Registration, PKCE and refresh tokens. The grant is scoped to your account and revocable at any time in the [Client Area](https://panel.hostafrica.com/).
 
-For the rare client that can't run OAuth, generate an API token in the Client Area and pass `--token`. Config files containing a token are written `chmod 600`. Registration is read-modify-write, so entries for other MCP servers in the same file are preserved.
+For the rare client that can't run OAuth, generate an API token in the Client Area and pass `--token`. Config files containing a token are restricted to your user account: `chmod 600` on macOS and Linux, an explicit NTFS ACL for your account only on Windows. Registration is read-modify-write, so entries for other MCP servers in the same file are preserved.
 
 ## Links
 

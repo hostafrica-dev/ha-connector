@@ -114,3 +114,38 @@ test("config file is written mode 600 even if it pre-existed looser", async (t) 
   const stat = await fs.stat(cfgPath);
   assert.equal(stat.mode & 0o777, 0o600);
 });
+
+test("config file containing a token is ACL-restricted to the current user on Windows", async (t) => {
+  if (process.platform !== "win32") return t.skip("Windows ACLs only");
+  const dir = await tmpdir();
+  const cfgPath = path.join(dir, "cfg", "mcp.json");
+  const client = makeClient(dir);
+  await client.register({ auth: { kind: "token", token: "tok" } });
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const { stdout } = await promisify(execFile)("icacls", [cfgPath]);
+  // icacls prints "PRINCIPAL:(perms)" per ACE; the first is prefixed by the path.
+  const aces = stdout
+    .replace(cfgPath, "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => /:\(.*\)$/.test(l))
+    .map((l) => {
+      const i = l.lastIndexOf(":(");
+      return { principal: l.slice(0, i), perms: l.slice(i + 1) };
+    });
+  const user = process.env.USERNAME ?? "";
+  const isUser = (p: string) => p.toLowerCase().endsWith(`\\${user.toLowerCase()}`);
+  // Only the owner and the root-equivalent principals may remain.
+  const allowed = (p: string) =>
+    isUser(p) || /^NT AUTHORITY\\SYSTEM$/i.test(p) || /^BUILTIN\\Administrators$/i.test(p);
+  assert.ok(aces.length > 0, `no ACEs parsed from: ${stdout}`);
+  for (const ace of aces) {
+    assert.ok(allowed(ace.principal), `unexpected principal ${ace.principal} in: ${stdout}`);
+    assert.ok(!ace.perms.includes("(I)"), `inherited ACE ${ace.principal} in: ${stdout}`);
+  }
+  assert.ok(
+    aces.some((a) => isUser(a.principal) && a.perms.includes("(F)")),
+    `current user lacks full control in: ${stdout}`,
+  );
+});
