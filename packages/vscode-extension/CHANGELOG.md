@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2
+
+Security hardening for Windows. No changes to OAuth registrations.
+
+- Config files that contain an API token now get an explicit owner-only NTFS ACL on Windows, where POSIX mode 600 has no effect. Inherited entries and the Everyone, Authenticated Users and Users groups are removed; SYSTEM and Administrators keep access, as root does on POSIX.
+- The core test suite now runs on Windows in CI and verifies the resulting ACL.
+- Documentation describes the per-platform file protection instead of "chmod 600".
+
 ## 1.0.1
 
 Documentation and packaging update. No functional changes.
