@@ -1,6 +1,6 @@
 # HostAfrica Connector
 
-![release](https://img.shields.io/badge/release-v1.0.1-2e3388) ![license](https://img.shields.io/badge/license-MIT-109235) ![MCP](https://img.shields.io/badge/protocol-MCP-555)
+![release](https://img.shields.io/github/v/release/hostafrica-dev/ha-connector?label=release&color=2e3388) ![license](https://img.shields.io/badge/license-MIT-109235) ![MCP](https://img.shields.io/badge/protocol-MCP-555)
 
 Register the HostAfrica remote MCP server with your AI tools (editors, CLI agents, chat apps), so your assistant can manage VPS servers, DNS, domains, backups and orders from plain-language prompts.
 
@@ -19,7 +19,7 @@ The extension is on [Open VSX](https://open-vsx.org/extension/hostafrica/connect
 For VS Code, and anywhere not wired to Open VSX, download the `.vsix` from the [latest release](https://github.com/hostafrica-dev/ha-connector/releases/latest):
 
 ```bash
-code --install-extension connector-1.0.1.vsix
+code --install-extension connector-1.0.2.vsix
 ```
 
 Swap `code` for `cursor` or `windsurf` to install into those. VS Marketplace publishing is still to come.
@@ -133,7 +133,7 @@ cd packages/vscode-extension && npm run package
 ```
 
 ```bash
-code --install-extension packages/vscode-extension/connector-1.0.1.vsix
+code --install-extension packages/vscode-extension/connector-1.0.2.vsix
 ```
 
 Cursor and Windsurf accept the same flag; swap `code` for `cursor` or `windsurf`.
