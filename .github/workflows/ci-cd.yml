@@ -31,6 +31,29 @@ jobs:
 
       - run: npm ci
 
+      # A workspace dependency on another workspace package must pin that
+      # package's current version. Otherwise npm installs the stale copy from
+      # the registry instead of linking packages/, and esbuild bakes it into
+      # the extension (v1.0.2 shipped core 1.0.0 this way).
+      - name: Check internal dependency versions
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dirs = fs.readdirSync("packages").map((d) => `packages/${d}`);
+            const pkgs = dirs.map((d) => ({ dir: d, json: JSON.parse(fs.readFileSync(`${d}/package.json`, "utf8")) }));
+            const versions = Object.fromEntries(pkgs.map((p) => [p.json.name, p.json.version]));
+            let bad = 0;
+            for (const { dir, json } of pkgs) {
+              for (const [dep, range] of Object.entries(json.dependencies ?? {})) {
+                if (dep in versions && range !== versions[dep]) {
+                  console.error(`${dir} depends on ${dep}@${range}, but the workspace has ${versions[dep]}`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          '
+
       - run: npm run check
 
       - name: Build

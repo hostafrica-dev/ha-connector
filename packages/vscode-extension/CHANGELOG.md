@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The 1.0.2 extension bundled connector-core 1.0.0 from npm instead of the workspace copy, so the Windows ACL hardening listed below did not ship in it. The extension now depends on core 1.0.2, and CI fails if a workspace package pins a stale version of another.
+
 ## 1.0.2
 
 Security hardening for Windows. No changes to OAuth registrations.

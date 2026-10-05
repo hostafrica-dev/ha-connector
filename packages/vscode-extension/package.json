@@ -173,7 +173,7 @@
     "test:vscode": "npm run build && tsc -p tsconfig.test.json && node out-test/test/runTest.js"
   },
   "dependencies": {
-    "@hostafrica/connector-core": "1.0.0"
+    "@hostafrica/connector-core": "1.0.2"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.7",
