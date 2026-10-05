@@ -149,3 +149,96 @@ test("config file containing a token is ACL-restricted to the current user on Wi
     `current user lacks full control in: ${stdout}`,
   );
 });
+
+test("register and unregister keep comments, formatting and other servers (JSONC)", async () => {
+  const dir = await tmpdir();
+  const cfgPath = path.join(dir, "cfg", "mcp.json");
+  await fs.mkdir(path.dirname(cfgPath), { recursive: true });
+  const original = [
+    "{",
+    "    // servers I use daily",
+    '    "mcpServers": {',
+    '        "other": { "url": "https://example.com/mcp" } // keep me',
+    "    }",
+    "}",
+    "",
+  ].join("\n");
+  await fs.writeFile(cfgPath, original);
+  const client = makeClient(dir);
+
+  await client.register({ auth: { kind: "oauth" } });
+  const registered = await fs.readFile(cfgPath, "utf8");
+  assert.match(registered, /\/\/ servers I use daily/);
+  assert.match(registered, /\/\/ keep me/);
+  assert.match(registered, /\n {8}"hostafrica": \{\n {12}"url": /, "4-space indent kept");
+  assert.equal(await client.isRegistered(), true);
+
+  await client.unregister();
+  const after = await fs.readFile(cfgPath, "utf8");
+  assert.doesNotMatch(after, /hostafrica/);
+  assert.match(after, /\/\/ servers I use daily/);
+  assert.match(after, /"other": \{ "url": "https:\/\/example.com\/mcp" \} \/\/ keep me/);
+});
+
+test("register replaces an existing entry instead of duplicating it", async () => {
+  const dir = await tmpdir();
+  const cfgPath = path.join(dir, "cfg", "mcp.json");
+  const client = makeClient(dir);
+  await client.register({ auth: { kind: "token", token: "tok" } });
+  await client.register({ auth: { kind: "oauth" } });
+  const raw = await fs.readFile(cfgPath, "utf8");
+  assert.equal(raw.match(/"hostafrica"/g)?.length, 1);
+  assert.deepEqual(JSON.parse(raw).mcpServers.hostafrica, { url: MCP_OAUTH_URL });
+});
+
+test("register rejects a config whose root key is not an object", async () => {
+  const dir = await tmpdir();
+  const cfgPath = path.join(dir, "cfg", "mcp.json");
+  await fs.mkdir(path.dirname(cfgPath), { recursive: true });
+  await fs.writeFile(cfgPath, JSON.stringify({ mcpServers: [] }));
+  const client = makeClient(dir);
+  await assert.rejects(
+    () => client.register({ auth: { kind: "oauth" } }),
+    /"mcpServers" must be an object/
+  );
+  assert.equal(await fs.readFile(cfgPath, "utf8"), JSON.stringify({ mcpServers: [] }));
+});
+
+test("writes are atomic: no temp files are left next to the config", async () => {
+  const dir = await tmpdir();
+  const client = makeClient(dir);
+  await client.register({ auth: { kind: "token", token: "tok" } });
+  await client.unregister();
+  assert.deepEqual(await fs.readdir(path.join(dir, "cfg")), ["mcp.json"]);
+});
+
+test("an OAuth write keeps an existing file's permissions", async (t) => {
+  if (process.platform === "win32") return t.skip("POSIX permissions only");
+  const dir = await tmpdir();
+  const cfgPath = path.join(dir, "cfg", "mcp.json");
+  await fs.mkdir(path.dirname(cfgPath), { recursive: true });
+  await fs.writeFile(cfgPath, "{}");
+  await fs.chmod(cfgPath, 0o640);
+  const client = makeClient(dir);
+  await client.register({ auth: { kind: "oauth" } });
+  assert.equal((await fs.stat(cfgPath)).mode & 0o777, 0o640);
+  await client.unregister();
+  assert.equal((await fs.stat(cfgPath)).mode & 0o777, 0o640);
+});
+
+test("a symlinked config is written through to its target", async (t) => {
+  if (process.platform === "win32") return t.skip("symlinks need extra privileges on Windows");
+  const dir = await tmpdir();
+  const real = path.join(dir, "dotfiles", "mcp.json");
+  await fs.mkdir(path.dirname(real), { recursive: true });
+  await fs.writeFile(real, "{}");
+  const link = path.join(dir, "cfg", "mcp.json");
+  await fs.mkdir(path.dirname(link), { recursive: true });
+  await fs.symlink(real, link);
+  const client = makeClient(dir);
+  await client.register({ auth: { kind: "oauth" } });
+  assert.ok((await fs.lstat(link)).isSymbolicLink(), "link must survive");
+  assert.deepEqual(JSON.parse(await fs.readFile(real, "utf8")).mcpServers.hostafrica, {
+    url: MCP_OAUTH_URL,
+  });
+});

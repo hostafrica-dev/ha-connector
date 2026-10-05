@@ -90,9 +90,9 @@ type AuthMode =
 
 OAuth registrations contain no credentials, only the endpoint. The client runs its own browser sign-in against a server supporting Dynamic Client Registration, PKCE and refresh tokens. Prefer this wherever `supportsOAuth` is true.
 
-Token mode writes an `Authorization: Bearer <token>` header into the client's config, for the rare tool that can't run OAuth. Files written this way are restricted to the current user: `chmod 600` on POSIX, an owner-only NTFS ACL (via `icacls`) on Windows, where mode bits are ignored.
+Token mode writes an `Authorization: Bearer <token>` header into the client's config, for the rare tool that can't run OAuth. Files written this way are restricted to the current user: `chmod 600` on POSIX, an owner-only NTFS ACL (via `icacls`) on Windows, where mode bits are ignored. OAuth-only writes leave an existing file's permissions alone.
 
-Writes are read-modify-write: entries for other MCP servers, and unrelated top-level keys, are preserved. Invalid existing JSON or TOML raises a clear error naming the file rather than overwriting it.
+Edits touch only the HostAfrica entry. JSON configs are edited in place, so other servers, comments (JSONC) and indentation survive; Codex's TOML gets only the `[mcp_servers.hostafrica]` table replaced, falling back to a full re-serialise when the server is defined some other way. Each write goes to a temp file that is renamed over the config, so a crash can't truncate it, and symlinked configs are written through to their target. Invalid existing JSON or TOML raises a clear error naming the file rather than overwriting it.
 
 ## Links
 

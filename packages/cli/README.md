@@ -46,9 +46,9 @@ codex        not detected    auth=oauth   /Users/you/.codex/config.toml
 
 | Option | Purpose |
 |---|---|
-| `--token <token>` | API token for clients that can't run OAuth. Also read from `HOSTAFRICA_API_TOKEN`. |
+| `--token <token>` | Register with an API token (bearer endpoint) instead of OAuth, e.g. for CI or headless machines. `--token=<token>` works too, and `HOSTAFRICA_API_TOKEN` is read when the flag is absent. |
 
-OAuth-capable clients never need a token; they open the browser themselves on first use.
+Without a token, registrations use OAuth: each client opens the browser itself on first use.
 
 ## Supported clients
 
@@ -62,7 +62,9 @@ VS Code isn't in this list: the [companion extension](https://github.com/hostafr
 
 Registrations carry no credentials. They point at the OAuth endpoint, and your tool runs the browser sign-in itself. The endpoint supports Dynamic Client Registration, PKCE and refresh tokens. The grant is scoped to your account and revocable at any time in the [Client Area](https://panel.hostafrica.com/).
 
-For the rare client that can't run OAuth, generate an API token in the Client Area and pass `--token`. Config files containing a token are written `chmod 600`. Registration is read-modify-write, so entries for other MCP servers in the same file are preserved.
+Where OAuth can't run (CI, headless machines), generate an API token in the Client Area and pass `--token`; registrations then use the bearer endpoint. Config files containing a token are restricted to your user account: `chmod 600` on macOS and Linux, an explicit NTFS ACL for your account only on Windows.
+
+Only the HostAfrica entry is changed. Other MCP servers, comments and formatting in the same file are left as they were, and writes are atomic, so an interrupted install can't leave a half-written config.
 
 ## Links
 

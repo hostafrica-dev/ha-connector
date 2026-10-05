@@ -2,7 +2,7 @@
   "name": "connector",
   "displayName": "HostAfrica Connector",
   "description": "Deploy, monitor and manage HostAfrica VPS, DNS and domains from your AI coding assistant — registers the HostAfrica MCP server with VS Code, Claude Code, Cursor and more.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "hostafrica",
   "license": "MIT",
   "repository": {
@@ -173,7 +173,7 @@
     "test:vscode": "npm run build && tsc -p tsconfig.test.json && node out-test/test/runTest.js"
   },
   "dependencies": {
-    "@hostafrica/connector-core": "1.0.0"
+    "@hostafrica/connector-core": "1.0.3"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.7",

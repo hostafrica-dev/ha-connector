@@ -9,6 +9,9 @@ await build({
   external: ["vscode"],
   format: "cjs",
   platform: "node",
+  // Prefer ESM builds: jsonc-parser's UMD `main` hides its internal requires
+  // inside a factory, which esbuild can't follow, so they'd fail at runtime.
+  mainFields: ["module", "main"],
   target: "node20",
   sourcemap: true,
 });

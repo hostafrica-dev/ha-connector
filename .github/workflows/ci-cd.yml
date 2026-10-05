@@ -31,6 +31,42 @@ jobs:
 
       - run: npm ci
 
+      # A workspace dependency on another workspace package must pin that
+      # package's current version. Otherwise npm installs the stale copy from
+      # the registry instead of linking packages/, and esbuild bakes it into
+      # the extension (v1.0.2 shipped core 1.0.0 this way).
+      - name: Check internal dependency versions
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dirs = fs.readdirSync("packages").map((d) => `packages/${d}`);
+            const pkgs = dirs.map((d) => ({ dir: d, json: JSON.parse(fs.readFileSync(`${d}/package.json`, "utf8")) }));
+            const versions = Object.fromEntries(pkgs.map((p) => [p.json.name, p.json.version]));
+            let bad = 0;
+            for (const { dir, json } of pkgs) {
+              for (const [dep, range] of Object.entries(json.dependencies ?? {})) {
+                if (dep in versions && range !== versions[dep]) {
+                  console.error(`${dir} depends on ${dep}@${range}, but the workspace has ${versions[dep]}`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          '
+
+      # docs/ mirrors the package READMEs that npm and the marketplaces render.
+      - name: Check docs mirror the package READMEs
+        run: |
+          status=0
+          for pair in cli:connect-cli core:connector-core vscode-extension:vscode-extension; do
+            pkg="${pair%%:*}"; doc="${pair#*:}"
+            if ! cmp -s "packages/${pkg}/README.md" "docs/${doc}.md"; then
+              echo "docs/${doc}.md differs from packages/${pkg}/README.md; copy one over the other"
+              status=1
+            fi
+          done
+          exit $status
+
       - run: npm run check
 
       - name: Build

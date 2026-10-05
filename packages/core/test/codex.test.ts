@@ -62,3 +62,69 @@ test("register throws a clear error on invalid existing TOML", async () => {
   const codex = makeCodex(home);
   await assert.rejects(() => codex.register({ auth: { kind: "oauth" } }), /not valid TOML/);
 });
+
+const COMMENTED = [
+  "# my Codex settings",
+  'model = "gpt-5" # default model',
+  "",
+  "# a server I wrote",
+  "[mcp_servers.other]",
+  'command = "npx"',
+  'args = ["other-mcp"]',
+  "",
+  "# profiles below",
+  "[profiles.fast]",
+  'model = "gpt-5-mini"',
+  "",
+].join("\n");
+
+test("register and unregister keep comments and layout", async () => {
+  const home = await tmpHome();
+  const cfgPath = path.join(home, ".codex", "config.toml");
+  await fs.mkdir(path.dirname(cfgPath), { recursive: true });
+  await fs.writeFile(cfgPath, COMMENTED);
+  const codex = makeCodex(home);
+
+  await codex.register({ auth: { kind: "oauth" } });
+  const registered = await fs.readFile(cfgPath, "utf8");
+  assert.ok(registered.startsWith(COMMENTED), "existing text is untouched");
+  assert.match(registered, /\[mcp_servers\.hostafrica\]\nurl = "https:\/\/mcp\.hostafrica\.com\/mcp"\n$/);
+
+  await codex.unregister();
+  assert.equal(await fs.readFile(cfgPath, "utf8"), COMMENTED);
+});
+
+test("re-registering replaces our table in place, subtables included", async () => {
+  const home = await tmpHome();
+  const cfgPath = path.join(home, ".codex", "config.toml");
+  await fs.mkdir(path.dirname(cfgPath), { recursive: true });
+  await fs.writeFile(cfgPath, COMMENTED);
+  const codex = makeCodex(home);
+  await codex.register({ auth: { kind: "token", token: "tok_1" } });
+  await codex.register({ auth: { kind: "oauth" } });
+  const raw = await fs.readFile(cfgPath, "utf8");
+  assert.doesNotMatch(raw, /http_headers|tok_1/);
+  assert.match(raw, /# profiles below\n\[profiles\.fast\]/);
+  const cfg = parseToml(raw) as any;
+  assert.deepEqual(cfg.mcp_servers.hostafrica, { url: "https://mcp.hostafrica.com/mcp" });
+  assert.equal(cfg.mcp_servers.other.command, "npx");
+});
+
+test("an inline definition falls back to a full rewrite that is still correct", async () => {
+  const home = await tmpHome();
+  const cfgPath = path.join(home, ".codex", "config.toml");
+  await fs.mkdir(path.dirname(cfgPath), { recursive: true });
+  await fs.writeFile(
+    cfgPath,
+    `model = "gpt-5"\n\n[mcp_servers]\nhostafrica = { url = "https://old.example/mcp" }\nother = { command = "npx" }\n`
+  );
+  const codex = makeCodex(home);
+  await codex.register({ auth: { kind: "token", token: "tok_2" } });
+  const cfg = parseToml(await fs.readFile(cfgPath, "utf8")) as any;
+  assert.equal(cfg.model, "gpt-5");
+  assert.equal(cfg.mcp_servers.other.command, "npx");
+  assert.deepEqual(cfg.mcp_servers.hostafrica, {
+    url: MCP_BEARER_URL,
+    http_headers: { Authorization: "Bearer tok_2" },
+  });
+});

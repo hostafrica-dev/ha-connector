@@ -19,7 +19,7 @@ The extension is on [Open VSX](https://open-vsx.org/extension/hostafrica/connect
 For VS Code, and anywhere not wired to Open VSX, download the `.vsix` from the [latest release](https://github.com/hostafrica-dev/ha-connector/releases/latest):
 
 ```bash
-code --install-extension connector-1.0.2.vsix
+code --install-extension connector-1.0.3.vsix
 ```
 
 Swap `code` for `cursor` or `windsurf` to install into those. VS Marketplace publishing is still to come.
@@ -133,7 +133,7 @@ cd packages/vscode-extension && npm run package
 ```
 
 ```bash
-code --install-extension packages/vscode-extension/connector-1.0.2.vsix
+code --install-extension packages/vscode-extension/connector-1.0.3.vsix
 ```
 
 Cursor and Windsurf accept the same flag; swap `code` for `cursor` or `windsurf`.
@@ -141,7 +141,7 @@ Cursor and Windsurf accept the same flag; swap `code` for `cursor` or `windsurf`
 ### Tests
 
 ```bash
-npm test   # unit suite for the registrar core (node:test)
+npm test   # unit suites for the registrar core and the CLI (node:test)
 ```
 
 ```bash

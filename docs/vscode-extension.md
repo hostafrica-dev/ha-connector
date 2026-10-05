@@ -32,7 +32,7 @@ The HostAfrica icon in the activity bar lists every AI client detected on your m
 | **HostAfrica: Disconnect** | Remove it everywhere and clear any stored token |
 | **HostAfrica: Register with Client…** | Register a single client |
 | **HostAfrica: Remove from Client…** | Unregister a single client |
-| **HostAfrica: Set API Token** | Store a token for clients that can't run OAuth |
+| **HostAfrica: Set API Token** | Store a token for clients that can't run OAuth (none today) |
 | **HostAfrica: Open Client Area** | Review or revoke access |
 
 Registering from here writes the same config the tool would write itself, so Claude Code, Cursor, Windsurf, Codex CLI, Gemini CLI, Antigravity, Devin CLI, JetBrains Junie and Claude Desktop all pick it up. Each still runs its own browser sign-in the first time you use it.
@@ -41,7 +41,7 @@ Registering from here writes the same config the tool would write itself, so Cla
 
 Registrations point at the OAuth endpoint (`https://mcp.hostafrica.com/mcp`) with no credentials in them. Your tool opens the browser, you sign in, and the grant is scoped to your account and revocable anytime in the [Client Area](https://panel.hostafrica.com/). The endpoint supports Dynamic Client Registration, PKCE and refresh tokens, so each client runs the flow itself.
 
-For the rare case OAuth can't run (JetBrains AI Assistant, CI), generate an API token in the Client Area and use **HostAfrica: Set API Token**. The extension keeps its copy in VS Code's encrypted SecretStorage; tokens it writes into other tools' config files are restricted to your account (chmod 600 on macOS and Linux, an owner-only NTFS ACL on Windows).
+The extension always registers OAuth for clients that support it, which today is every client it configures. **HostAfrica: Set API Token** keeps a token in VS Code's encrypted SecretStorage for any client that can't; tokens written into other tools' config files are restricted to your account (chmod 600 on macOS and Linux, an owner-only NTFS ACL on Windows). For CI or headless machines, use the CLI's `--token` instead.
 
 ## Other editors and terminals
 
