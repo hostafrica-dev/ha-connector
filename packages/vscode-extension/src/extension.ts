@@ -44,13 +44,25 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
       if (auth.kind === "token") {
         void vscode.window.showWarningMessage(
           `${client.name} doesn't support MCP OAuth yet, so the API token was written to ` +
-            `${client.describeTarget()} (file mode 600). You can rotate it in the Client Area.`
+            `${client.describeTarget()}, readable only by your user account. You can rotate it in the Client Area.`
         );
       }
       return true;
     } catch (err) {
       void vscode.window.showErrorMessage(
         `HostAfrica: could not register with ${client.name}: ${err instanceof Error ? err.message : String(err)}`
+      );
+      return false;
+    }
+  }
+
+  async function unregisterOne(client: McpClient): Promise<boolean> {
+    try {
+      await client.unregister();
+      return true;
+    } catch (err) {
+      void vscode.window.showErrorMessage(
+        `HostAfrica: could not remove from ${client.name}: ${err instanceof Error ? err.message : String(err)}`
       );
       return false;
     }
@@ -90,20 +102,19 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
     vscode.commands.registerCommand("hostafrica.disconnectAll", async () => {
       const statuses = (await clientStatuses()).filter((s) => s.registered);
+      let failures = 0;
       for (const { client } of statuses) {
-        try {
-          await client.unregister();
-        } catch (err) {
-          void vscode.window.showErrorMessage(
-            `HostAfrica: could not remove from ${client.name}: ${err instanceof Error ? err.message : String(err)}`
-          );
-        }
+        if (!(await unregisterOne(client))) failures++;
       }
       await context.secrets.delete(TOKEN_SECRET_KEY);
       tree.refresh();
       const openArea = "Open Client Area";
+      const removed =
+        failures === 0
+          ? "removed from all clients"
+          : `removed from ${statuses.length - failures} of ${statuses.length} clients (see the errors)`;
       const choice = await vscode.window.showInformationMessage(
-        "HostAfrica: removed from all clients and cleared the stored token. " +
+        `HostAfrica: ${removed} and cleared the stored token. ` +
           "You can revoke OAuth grants or rotate tokens in the Client Area.",
         openArea
       );
@@ -121,7 +132,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     vscode.commands.registerCommand("hostafrica.unregisterClient", async (item?: ClientItem) => {
       const client = item?.status.client ?? (await pickClient((s) => s.registered));
       if (!client) return;
-      await client.unregister();
+      await unregisterOne(client);
       tree.refresh();
     }),
 

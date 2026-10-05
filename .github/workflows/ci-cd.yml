@@ -54,6 +54,19 @@ jobs:
             process.exit(bad);
           '
 
+      # docs/ mirrors the package READMEs that npm and the marketplaces render.
+      - name: Check docs mirror the package READMEs
+        run: |
+          status=0
+          for pair in cli:connect-cli core:connector-core vscode-extension:vscode-extension; do
+            pkg="${pair%%:*}"; doc="${pair#*:}"
+            if ! cmp -s "packages/${pkg}/README.md" "docs/${doc}.md"; then
+              echo "docs/${doc}.md differs from packages/${pkg}/README.md; copy one over the other"
+              status=1
+            fi
+          done
+          exit $status
+
       - run: npm run check
 
       - name: Build

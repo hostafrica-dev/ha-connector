@@ -32,7 +32,7 @@ class VsCodeItem extends vscode.TreeItem {
   constructor(nativeProviderActive: boolean) {
     super("VS Code (Copilot)", vscode.TreeItemCollapsibleState.None);
     this.contextValue = "vscode-native";
-    this.description = nativeProviderActive ? "registered (native)" : "needs VS Code 1.102+";
+    this.description = nativeProviderActive ? "registered (native)" : "needs VS Code 1.101+";
     this.iconPath = new vscode.ThemeIcon(nativeProviderActive ? "pass-filled" : "warning");
     this.tooltip = nativeProviderActive
       ? "Registered through the MCP server definition API — OAuth sign-in happens in Copilot Chat."

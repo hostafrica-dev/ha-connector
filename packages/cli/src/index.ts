@@ -15,9 +15,10 @@ Usage:
   hostafrica-connect uninstall [client...]  Remove the registration (default: all registered)
 
 Options:
-  --token <token>   API token for clients without OAuth support
-                    (or set HOSTAFRICA_API_TOKEN). OAuth-capable clients
-                    never need this — they sign in via the browser.
+  --token <token>   Register with an API token (bearer endpoint) instead of
+                    OAuth, e.g. for CI or headless machines. Also read from
+                    HOSTAFRICA_API_TOKEN. Without it, clients sign in via the
+                    browser on first use.
 
 Clients: claude-code, cursor, windsurf, gemini-cli, codex, antigravity,
          devin-cli, junie, claude-desktop
@@ -25,13 +26,17 @@ Clients: claude-code, cursor, windsurf, gemini-cli, codex, antigravity,
 Tokens are generated in the Client Area: ${CLIENT_AREA_URL}`;
 
 function parseArgs(argv: string[]) {
-  const args = [...argv];
-  let token: string | undefined = process.env.HOSTAFRICA_API_TOKEN;
-  const tokenIdx = args.indexOf("--token");
-  if (tokenIdx !== -1) {
-    token = args[tokenIdx + 1];
-    if (!token) fail("--token requires a value");
-    args.splice(tokenIdx, 2);
+  const args: string[] = [];
+  let token: string | undefined = process.env.HOSTAFRICA_API_TOKEN?.trim() || undefined;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--token" || arg.startsWith("--token=")) {
+      const value = arg === "--token" ? argv[++i] : arg.slice("--token=".length);
+      if (!value || value.startsWith("--")) fail("--token requires a value");
+      token = value;
+    } else {
+      args.push(arg);
+    }
   }
   const [command, ...ids] = args;
   return { command, ids, token };
@@ -42,16 +47,15 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
+/** An explicit token wins; otherwise OAuth wherever the client supports it. */
 function authFor(client: McpClient, token: string | undefined): AuthMode {
+  if (token) return { kind: "token", token };
   if (client.supportsOAuth) return { kind: "oauth" };
-  if (!token) {
-    fail(
-      `${client.name} does not support MCP OAuth yet, so it needs an API token.\n` +
-        `Generate one in the Client Area (${CLIENT_AREA_URL}) and pass --token <token> ` +
-        `or set HOSTAFRICA_API_TOKEN.`
-    );
-  }
-  return { kind: "token", token };
+  fail(
+    `${client.name} does not support MCP OAuth yet, so it needs an API token.\n` +
+      `Generate one in the Client Area (${CLIENT_AREA_URL}) and pass --token <token> ` +
+      `or set HOSTAFRICA_API_TOKEN.`
+  );
 }
 
 async function resolveTargets(ids: string[], installedOnly: boolean): Promise<McpClient[]> {
@@ -74,7 +78,7 @@ async function main() {
       const statuses = await clientStatuses();
       for (const { client, installed, registered } of statuses) {
         const state = !installed ? "not detected" : registered ? "registered" : "detected";
-        const auth = client.supportsOAuth ? "oauth" : "token";
+        const auth = token || !client.supportsOAuth ? "token" : "oauth";
         console.log(
           `${client.id.padEnd(12)} ${state.padEnd(14)} auth=${auth.padEnd(6)} ${client.describeTarget()}`
         );
@@ -101,7 +105,10 @@ async function main() {
             : "API token (bearer)";
         console.log(`✔ ${client.name}: registered (${how})`);
         if (auth.kind === "token") {
-          console.log(`  note: the token is stored in ${client.describeTarget()} — file mode 600.`);
+          console.log(
+            `  note: the token is stored in plain text in ${client.describeTarget()}; ` +
+              `config files this tool writes are readable only by your user account.`
+          );
         }
       }
       if (failures > 0) process.exit(1);

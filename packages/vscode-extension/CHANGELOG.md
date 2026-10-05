@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.0.3
 
-- The 1.0.2 extension bundled connector-core 1.0.0 from npm instead of the workspace copy, so the Windows ACL hardening listed below did not ship in it. The extension now depends on core 1.0.2, and CI fails if a workspace package pins a stale version of another.
+Ships the Windows hardening that 1.0.2 missed, makes API tokens work from the CLI, and stops config writes from disturbing the rest of the file.
+
+- The 1.0.2 extension bundled connector-core 1.0.0 from npm instead of the workspace copy, so the Windows ACL hardening listed under 1.0.2 did not ship in it. It does now, and CI fails if a workspace package pins a stale version of another.
+- CLI: `--token` (also `--token=<token>`, or `HOSTAFRICA_API_TOKEN`) now registers with the bearer endpoint as documented. Previously it was ignored because every client supports OAuth. `status` shows which mode `install` would use.
+- Config edits change only the HostAfrica entry: comments, indentation and other servers in JSON (including JSONC) configs are kept, and Codex's `config.toml` keeps its comments and layout.
+- Writes are atomic (temp file, then rename), symlinked configs are written through to their target, and OAuth-only writes no longer change an existing file's permissions.
+- Extension: removing a client reports errors instead of failing silently, **Disconnect** says when some removals failed, and the sidebar names the right minimum VS Code version (1.101).
+- New CLI test suite; the `docs/` copies of the package READMEs are checked against the shipped ones in CI.
 
 ## 1.0.2
 
